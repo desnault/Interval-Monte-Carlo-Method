@@ -1,4 +1,4 @@
-[submodule "src/CCT"]
-	path = src/CCT
+[submodule "src/CodacCoverageToolbox"]
+	path = src/CodacCoverageToolbox
 	url = git@github.com:desnault/Codac-Coverage-Toolbox.git
 	branch = submodule
