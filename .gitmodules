@@ -1,0 +1,4 @@
+[submodule "src/CCT"]
+	path = src/CCT
+	url = git@github.com:desnault/Codac-Coverage-Toolbox.git
+	branch = submodule
