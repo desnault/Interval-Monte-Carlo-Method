@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cstdlib>
 
 
 
@@ -71,7 +72,7 @@ TubeVector generate_tube(TrajectoryVector &traj)
  *==================================================================================*/
 
 // Binary sensor detection range (disk radius)
-double detection_range = 1.5;
+const double detection_range = 1.5;
 
 
 
@@ -81,10 +82,10 @@ double detection_range = 1.5;
 
 // Time period over which to project the sensor coverage
 // Here we consider the whole trajectory
-Interval t_proj(t0, tf);
+const Interval t_proj(t0, tf);
 
 // Temporal resolution of the projection (smaller = finer resolution)
-double eps_proj = 0.01;
+const double eps_proj = 0.01;
 
 
 
@@ -93,10 +94,10 @@ double eps_proj = 0.01;
  *==================================================================================*/
 
 // Resolution of the paving (smaller = more refined discretization)
-double paving_resolution = 0.2;
+const double paving_resolution = 0.2;
 
 // 2D area to be paved (x, y)
-IntervalVector paving_area = {{-7, 7}, {-8, 8}};
+const IntervalVector paving_area = {{-7, 7}, {-8, 8}};
 
 
 
@@ -114,7 +115,7 @@ int main()
 
     // Box to classify
 	IntervalVector box_to_classify= {{-0.5, 0.5},{4., 5.}};
-	std::cout<<"In this example, the box (represented in brown on the figure) is outside the covered area (colored in green on the figure).\nExpected output of the inclusion classifier: <0, 0> (False)\n"<<std::endl;
+	std::cout<<"In this example, the box (brown) is outside the covered area (green).\nExpected output of the inclusion classifier: <0, 0> (False)\n"<<std::endl;
 
     // Evaluate inclusion using fast_classify() method
     Interval evaluation_result = my_classifier.fast_classify(box_to_classify);
@@ -141,9 +142,12 @@ int main()
     // Display the box to classify
     fig.draw_box(box_to_classify, "black[brown]");
 
+    // Do not display the robot at the end of the trajectory
+    fig.show(0);
+
     // Display robot perception circles at selected times
-    std::vector<double> detection_time = {1., 6.5, 11.5};
-    for (int i=0; i<detection_time.size(); i++)
+    const std::vector<double> detection_time = {1., 6.3, 11.5};
+    for (size_t i=0; i<detection_time.size(); i++)
     {
         // Display the perception at the considered time
         double px = my_traj[0](detection_time[i]);
@@ -153,9 +157,6 @@ int main()
         // Display AUV position at the considered time
         fig.draw_vehicle(detection_time[i], &my_traj, 0.8);
     }
-    
-    // Do not display the robot at the end of the trajectory
-    fig.show(0);
     
     // End display
     vibes::endDrawing();
