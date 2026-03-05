@@ -16,16 +16,21 @@
  *     both minimal and non-minimal separators.
  *
  * The classifier returns three-valued logic results encoded as intervals:
- *   [1]   => certainly inside,
- *   [0]   => certainly outside,
- *   [0,1] => uncertain (boundary intersection or unresolved classification).
+ *  [1]   => box is certainly included in the set,
+ *  [0]   => box is certainly not included in the set,
+ *  [0,1] => uncertain (boundary intersection or unresolved classification).
  *
  * For a full description of the class interface and usage context, see
  * BoxInclusionClassifier.h.
 */
 
 #include "BoxInclusionClassifier.h"
+
 #include <iostream>
+#include <vector>
+#include <deque>
+#include <utility>
+#include <stdexcept>
 
 namespace
 {
@@ -54,10 +59,18 @@ namespace
      */
     vector<IntervalVector> box_diff(const IntervalVector& x0, const IntervalVector& x)
     {
+        // Save the list of boxes corresponding to x0 \ x 
         vector<IntervalVector> v;
-        IntervalVector* boxes;
+
+        // Compute the difference x0 \ x
+        IntervalVector* boxes = nullptr;
         int n = x0.diff(x, boxes);
+
+        // Fill the vector with the boxes
         v.assign(boxes, boxes + n);
+
+        // Return the list of boxes and free memory to avoid leaks
+        delete[] boxes;
         return v;
     }
 }
@@ -76,11 +89,6 @@ _sep(separator)
 
 Interval BoxInclusionClassifier::fast_classify(const IntervalVector& box)
 {   
-    /*
-     * This method performs a single separator call to classify the box.
-     * It is sound only if the separator is minimal.
-     */
-
     // Enforce 2D assumption (custom separators used in this application are 2D)
     if (box.size()!=2)
     {
@@ -122,12 +130,6 @@ Interval BoxInclusionClassifier::fast_classify(const IntervalVector& box)
 
 Interval BoxInclusionClassifier::classify(const IntervalVector& box, const double paving_resolution, bool overpass_warning)
 {
-    /*
-     * This method implements a paving-based classification adapted from the
-     * SIVIA algorithm in CODAC. Only the logic specific to three-valued inclusion
-     * classification is commented in detail here.
-     */
-
     // Enforce 2D assumption
     if (box.size()!=2)
     {
@@ -223,7 +225,7 @@ Interval BoxInclusionClassifier::classify(const IntervalVector& box, const doubl
     {
         if (!overpass_warning)
         {
-            std::cout<<"[WARNING] BoxInclusionClassifier::classify(const IntervalVector& box, const double maximal_resolution, bool overpass_warning):f The classifier was unable to remove uncertainty"<<std::endl;
+            std::cout<<"[WARNING] BoxInclusionClassifier::classify: The classifier was unable to remove uncertainty"<<std::endl;
         }
         return Interval(0,1);
     }

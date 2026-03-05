@@ -11,8 +11,7 @@
  * CODAC separator.
  *
  * The classifier follows Kleene’s three-valued logic and returns an Interval encoding
- * the truth value of the proposition:
- *   "the box is covered by the set".
+ * the truth value of the proposition: "the box is included in the set" (i.e., box ⊆ set).
  *
  * The returned values are:
  *   - [1]   : the box is certainly inside the set (fully covered),
@@ -57,7 +56,8 @@ using namespace codac;
  *     only for minimal separators.
  *
  *   - Non-minimal separator: May require multiple calls or a paving approach (`classify`)
- *     to resolve box inclusion reliably.
+ *     to resolve box inclusion reliably. In practice, this often yields more conservative
+ *     [0,1] results compared to minimal separators.
  *
  *   - 2D limitation: This class currently supports only 2D boxes and 2D separators, 
  *     as required for the application (e.g., robot coverage along a planar trajectory).
@@ -140,7 +140,7 @@ class BoxInclusionClassifier
          *
          * @details
          * Evaluates whether a given 2D box is fully inside, fully outside, or partially inside
-         * the 2D set represented by the CODAC separator, using a SIVIA-like paving algorithm.
+         * the 2D set represented by the CODAC separator, using a paving algorithm (SIVIA method in CODAC).
          *
          * Unlike `fast_classify`, which performs a single separator call and is only sound
          * for minimal separators, this method subdivides the box until the **paving resolution**
@@ -172,16 +172,16 @@ class BoxInclusionClassifier
          *
          * @param box               2D interval box to classify.
          * @param paving_resolution  Maximum allowed diameter of box subdivisions.
-         *                          Smaller values yield finer classification but increase computation.
-         * @param overpass_warning   If false (default), prints a warning when the box inclusion
-         *                          cannot be resolved completely. If true, suppresses messages.
+         *                           Smaller values yield finer classification but increase computation.
+         * @param overpass_warning   If true, suppresses warnings when the box inclusion
+         *                           cannot be resolved completely. If false (default), prints a warning.
          *
          * @return Interval encoding three-valued inclusion logic as described above.
          *
          * @throws std::range_error if the input box is not two-dimensional.
          *
          * @note This method is particularly suited for Monte Carlo simulations that propagate
-         *       epistemic uncertainty using three-valued logic. For unexperienced users, a
+         *       epistemic uncertainty using three-valued logic. For inexperienced users, a
          *       recommended paving resolution is proportional to box size, e.g.:
          *           paving_resolution = box.max_diam() / 10
          *       This ensures a good trade-off between accuracy and computation time.
