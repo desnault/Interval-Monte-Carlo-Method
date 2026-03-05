@@ -11,16 +11,18 @@
  * and UNKNOWN. Each sample is classified as fully satisfying an event (TRUE),
  * fully not satisfying (FALSE), or uncertain/partially satisfying an event (UNKNOWN).  
  *
- * Compared to the standard binary Monte Carlo estimator, which computes a single
+ * Compared to the standard binary Monte Carlo estimator, which computes a real
  * estimate of the probability of an event, the three-valued logic Monte Carlo
  * estimator computes a **probability bound** represented as an Interval.  
  * This interval is not a standard stochastic confidence interval, but an
  * **empirical bound guaranteed in the limit by the law of large numbers**: as 
- * the number of samples N approaches infinity, the true probability of the event 
- * is guaranteed to lie within the interval.
+ * the number of samples N approaches infinity, the true probability of the event lie 
+ * almost surely within the interval.
  *
  * The class is **templated** over the type of sample `T`, allowing users to define
- * their own sample structure. The key customization point is the `classify()` method,
+ * their own sample structure. The estimator does not impose constraints on `T` beyond being 
+ * usable as an argument of `classify(const T&)` and storable in `std::vector<T>` for
+ * batch processing. The key customization point is the `classify()` method,
  * which must be defined in a derived class to classify samples according to
  * the user’s problem.  
  *
@@ -48,9 +50,12 @@
 
 #include "codac.h"
 
-#include <vector>
+#include <cstddef>
 #include <fstream>
 #include <iomanip>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 // Note: using namespace codac is intentionally used here for readability,
 // as this class is tightly coupled with CODAC interval types.
@@ -127,9 +132,9 @@ class IntervalMonteCarlo
          * @details
          * This pure virtual method must be implemented by the user in a derived class.
          * Each sample should be classified as:
-         *   - THREE_VALUE_LOGIC::TRUE   → sample fully satisfies the event
-         *   - THREE_VALUE_LOGIC::FALSE  → sample does not satisfy the event
-         *   - THREE_VALUE_LOGIC::UNKNOWN → sample outcome is uncertain
+         *   - THREE_VALUED_LOGIC::TRUE   → sample fully satisfies the event
+         *   - THREE_VALUED_LOGIC::FALSE  → sample does not satisfy the event
+         *   - THREE_VALUED_LOGIC::UNKNOWN → sample outcome is uncertain
          *
          * The returned value is later converted into an interval for the probability
          * estimate ([1], [0], or [0,1]).
@@ -281,17 +286,27 @@ class IntervalMonteCarlo
          * Similar to `process_samples`, but writes the evolution of the interval probability
          * bound after each sample to a text file. Useful for studying convergence
          * of the estimator.
+         * 
+         * The output file is opened in **append mode** (std::ios::app).
+         *
+         * This design allows the estimator to process samples in **multiple batches**
+         * without losing the continuity of the Monte Carlo evaluation. Each call
+         * appends new lines to the file, recording the updated probability interval
+         * as the total number of processed samples increases.
          *
          * The file format:
          *   n [lower_bound, upper_bound]
          *
+         * If a fresh export is desired, the user should delete the output file
+         * before running the estimator.
+         * 
          * Throws an exception if the input vector is empty or the file cannot be opened.
          *
          * @param samples: vector of samples to process
          * @param filename: path to the output file
          *
          * @note
-         * This method is intended for monitoring or debugging Monte Carlo runs.
+         * This method is intended for monitoring or debugging Monte Carlo runs. 
          */
         void process_samples_and_export(const std::vector<T>& samples, const std::string& filename)
         {
