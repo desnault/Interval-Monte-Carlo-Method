@@ -3,31 +3,36 @@
  * @author  Damien ESNAULT (PhD student, ENSTA/Lab-STICC)
  * @date    2025
  * 
- * @brief   Example of a three-valued logic Monte Carlo estimator using custom structured samples
+ * @brief   Example of the Interval Monte-Carlo Method (IMCM) using custom mission samples.
  *
  * @details
- * This example illustrates how to use the IntervalMonteCarlo class with user-defined
- * structured samples instead of built-in scalar types.
+ * This example illustrates how to use the IntervalMonteCarlo class with a user-defined
+ * structured sample type representing an AUV identification mission.
  *
- * Each Monte Carlo sample represents an AUV mission scenario, including:
- *  - a stochastic robot trajectory (modeled as a TubeVector),
- *  - an uncertain object position (modeled as a 2D interval box),
+ * Each Monte Carlo sample encodes:
+ *  - a robot trajectory (serialized TubeVector loaded from disk),
+ *  - an uncertain object position (2D IntervalVector box),
  *  - a sensor detection range.
  *
- * Because the object position is uncertain and represented as a set, the detection
- * outcome cannot always be classified using binary logic. Instead, a three-valued
- * logic is used:
- *  - TRUE    : the object is guaranteed to be detected,
- *  - FALSE   : the object is guaranteed not to be detected,
- *  - UNKNOWN : the detection outcome is uncertain (partial coverage).
+ * The event to evaluate is: "the object is detected during the mission".
+ * Because the object position is uncertain (set-based), the event realization follows a
+ * three-valued logic:
+ *  - TRUE    : detection is guaranteed (box fully covered),
+ *  - FALSE   : detection is impossible (box not covered at all),
+ *  - UNKNOWN : detection is uncertain (partial coverage).
  *
- * This example demonstrates how the three-valued logic Monte Carlo estimator
- * can be applied to robotics problems involving stochastic behaviors and
- * set-based perception models.
+ * Practical workflow demonstrated in this script:
+ *  1) Load a small dataset of TubeVector trajectories (*.tubevector) from the repo data folder.
+ *  2) Convert each trajectory into an AUV_Mission_Sample.
+ *  3) Update the estimator sample-by-sample (process_sample) and display the local evaluation.
+ *  4) Read the final empirical probability bound [P_E] after all samples have been processed.
+ *
+ * Note:
+ *  - For clarity, the local evaluation is obtained by calling evaluate_sample() in addition to
+ *    process_sample(). This re-evaluates the sample and is intended for demonstration purposes.
  ********************************************************************************************/
 
 #include "codac.h"
-#include "vibes.h"
 
 #include "SepDynDiskProj.h"
 #include "BoxInclusionClassifier.h"
@@ -35,42 +40,23 @@
 
 #include <vector>
 #include <iostream>
+#include <string>
+#include <filesystem>
+#include <cstdlib>
 
 
 
 /*==================================================================================
- * TRAJECTORY SETUP
+ * DATASET PARAMETERS
+ *==================================================================================
+ *
+ * This example loads pre-generated trajectories from disk (no simulation here).
+ * The time bounds below are used for the sensor coverage projection.
  *==================================================================================*/
 
 // Initial and final time of the trajectory
 const double t0 = 0.55;
 const double tf = 12;
-
-// Time step between trajectory points
-const double dt = 0.01;
-
-// Time domain for the trajectory
-const Interval tdomain(t0, tf);
-
-// Temporal definition of the trajectory using TFunction
-// Format: (x(t); y(t); heading(t))
-TFunction path("( 5*cos(0.5*t)*sin(t) ; 5*cos(0.5*t)*cos(t) ; atan2(-2.5*sin(0.5*t)*cos(t) - 5*cos(0.5*t)*sin(t) , -2.5*sin(0.5*t)*sin(t) + 5*cos(0.5*t)*cos(t)))");
-
-// Generate TrajectoryVector from the path
-TrajectoryVector generate_trajectory()
-{
-    TrajectoryVector traj(tdomain, path, dt);
-    traj[2] = traj[2].make_continuous(); // Make heading continuous to handle wrap-around at 0/2pi
-    return traj;
-}
-
-// Convert TrajectoryVector to TubeVector for contraction
-TubeVector generate_tube(TrajectoryVector &traj)
-{
-    TubeVector tube(traj, dt);
-    return tube;
-}
-
 
 
 /*==================================================================================
@@ -79,23 +65,21 @@ TubeVector generate_tube(TrajectoryVector &traj)
 
 // Time period over which to project the sensor coverage
 // Here we consider the whole trajectory
-Interval t_proj(t0, tf);
+const Interval t_proj(t0, tf);
 
 // Temporal resolution of the projection (smaller = finer resolution)
-double eps_proj = 0.01;
-
+const double eps_proj = 0.01;
 
 
 /*==================================================================================
- * PAVING PARAMETERS
+ * MISSION PARAMETERS
  *==================================================================================*/
 
-// Resolution of the paving (smaller = more refined discretization)
-double paving_resolution = 0.2;
-
-// 2D area to be paved (x, y)
-IntervalVector paving_area = {{-7, 7}, {-8, 8}};
-
+// Box containing the object to detect
+const IntervalVector box_to_cover = {{-0.5, 0.5},{-0.5,0.5}};
+    
+// Detection range of the robot
+const double detection_range = 1.;
 
 
 /*==================================================================================
@@ -105,7 +89,7 @@ IntervalVector paving_area = {{-7, 7}, {-8, 8}};
 // AUV mission sample definition.
 //
 // Each sample represents a single realization of an AUV mission and includes:
-//   - a robot trajectory (obtained via simulation),
+//   - a robot trajectory (loaded from disk),
 //   - an uncertain object position modeled as a 2D interval box,
 //   - the detection range of the onboard sensor.
 //
@@ -136,6 +120,9 @@ struct AUV_Mission_Sample
  * application-specific data structures while preserving the same estimation
  * principles.
  *
+ * Internally, the covered area is represented by a CODAC separator (SepDynDiskProj),
+ * and the event is evaluated by classifying the object box using BoxInclusionClassifier.
+ * 
  * @note
  * Only the sample type and the classify() method are application-dependent.
  * The Monte Carlo estimation logic is fully handled by the base class.
@@ -178,47 +165,33 @@ class MyCustomIntervalMonteCarlo : public IntervalMonteCarlo<AUV_Mission_Sample>
 
 int main()
 {
+
     // ----------------------------------------------------
-    // MONTE CARLO SAMPLE GENERATION
+    // MONTE CARLO SAMPLE LOAD
     // ----------------------------------------------------
 
     // Vector containing all Monte Carlo samples.
     // Each sample represents one possible realization of an AUV mission.
     std::vector<AUV_Mission_Sample> samples = {};
 
+    // Get path to the folder containing the trajectories
+    // INTERVAL_MC_DATA_DIR is expected to point to the repo "data" folder (set by CMake).
+    // This example loads trajectories from: ${INTERVAL_MC_DATA_DIR}/examples
+    std::string trajectory_directory = INTERVAL_MC_DATA_DIR;
+    trajectory_directory = trajectory_directory + "/examples";
 
-    // ############# Sample 1 #############
+    // Load each trajectory and convert it into an AUV_Mission_Sample
+    for (const auto& entry : std::filesystem::directory_iterator(trajectory_directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".tubevector")
+        {
+            TubeVector my_tube(entry.path().string());
+            AUV_Mission_Sample sample = {my_tube, box_to_cover, detection_range};
+            samples.push_back(sample);
+        }
+    }
 
-    // Generate the trajectory and the tube
-    TrajectoryVector my_traj = generate_trajectory();
-    TubeVector my_tube = generate_tube(my_traj);
-    
-    // Box containing the object to detect
-    IntervalVector box_to_cover = {{2., 3.},{-2.5,-1.5}};
-    
-    // Detection range of the robot
-    double detection_range = 1.5;
-    
-    // Create the sample
-    AUV_Mission_Sample sample = {my_tube, box_to_cover, detection_range};
-    
-    // Add the sample to the vector
-    samples.push_back(sample);
-
-    // ############# Sample 2 #############
-    // AUV_Mission_Sample sample2 = {my_tube2, box_to_cover2, detection_range2};
-    // samples.push_back(sample2);
-
-    // ...
-    // ...
-    // ...
-
-    // ############# Sample N #############
-    // AUV_Mission_Sample sampleN = {my_tubeN, box_to_coverN, detection_rangeN};
-    // samples.push_back(sampleN);
-
-    // Additional samples can be added here to represent other mission
-    // realizations (e.g., different trajectories, object positions, or sensors)
+    std::cout<< "\nNumber of trajectory(ies) loaded: "<<samples.size()<<std::endl<<std::endl;
 
     
     // ----------------------------------------------------
@@ -229,58 +202,26 @@ int main()
     MyCustomIntervalMonteCarlo my_estimator;
 
     // Process all samples and update the empirical probability bound
-    my_estimator.process_samples(samples);
+    // my_estimator.process_samples(samples);
 
-    // Retrieve the estimated interval bounding the success probability
-    Interval estimated_probability = my_estimator.get_probability_bound();
+    // OR
 
-    // For this specific configuration, the object is fully covered,
-    // so the expected interval probability is [1,1].
-    std::cout<< "\nExpected interval probability: <1, 1> (i.e., Interval(1))"<< std::endl;
-    
-    std::cout<< "The estimated interval probability is: "<< estimated_probability << std::endl<< std::endl;
-
-
-    // ----------------------------------------------------
-    // VISUALIZATION
-    // ----------------------------------------------------
-
-    // Initialize the graphical display
-    vibes::beginDrawing();
-    VIBesFigMap fig("Map");
-    fig.set_properties(100,100,800,800);
-
-    // Define display limits
-    fig.axis_limits(-9,9,-9,9);
-    fig.draw_box(paving_area, "black");
-
-    // Display the area covered by the sensor along the trajectory
-    SepDynDiskProj my_sep(my_tube, detection_range, t_proj, eps_proj, true);
-    SIVIA(paving_area, my_sep, paving_resolution);
-
-    // Display the AUV trajectory and its uncertainty tube
-    fig.add_trajectory(&my_traj, "x", 0, 1, "black");
-    fig.add_tube(&my_tube, "x", 0, 1);
-
-    // Display the uncertain object position
-    fig.draw_box(box_to_cover, "black[brown]");
-
-    // Display the sensor footprint and vehicle pose at selected time instants
-    std::vector<double> detection_time = {1.2, 6.5, 11.5};
-    for (int i = 0; i < detection_time.size(); i++)
+    // Process each sample individulay to verify inclusion evaluation
+    for (size_t i=0; i<samples.size(); i++)
     {
-        // Sensor detection disk at the given time
-        double px = my_traj[0](detection_time[i]);
-        double py = my_traj[1](detection_time[i]);
-        fig.draw_circle(px, py, detection_range, "black");
+        // Update estimator with sample
+        my_estimator.process_sample(samples[i]);
 
-        // AUV pose at the given time
-        fig.draw_vehicle(detection_time[i], &my_traj, 0.8);
+        // Get evaluation of the classify() method for the sample (only for display purpose)
+        Interval sample_evaluation = my_estimator.evaluate_sample(samples[i]);
+        // Display evaluation for the current trajectory
+        std::cout<<"Trajectory "<<i+1<<"/"<<samples.size()<<":"<<std::endl;
+        std::cout<<"\tLocal evaluation: "<<sample_evaluation<<std::endl;
     }
-    
-    // Render the figure
-    fig.show(0);
-    vibes::endDrawing();
+
+    // Get the interval estimate of the success probability
+    Interval estimated_probability = my_estimator.get_probability_bound();
+    std::cout<< "\nThe estimated interval probability is: "<< estimated_probability << std::endl<< std::endl;
 
     return EXIT_SUCCESS;
 }
