@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate and export deterministic and stochastic Dubins-car trajectories for the OCEANS 2025 scenario.")
 
-    parser.add_argument("--num-samples", type=int, default=500, help="Number of noisy simulations to generate and export (default: 500).")
+    parser.add_argument("--num-samples", type=int, default=1000, help="Number of noisy simulations to generate and export (default: 1000).")
     parser.add_argument("--output-dir", type=str, default="oceans2025", help="Name of the output directory created inside the output path (default: oceans2025).")
     parser.add_argument("--output-path", type=str, default=str(script_dir), help="Path where the output directory must be created (default: directory of this script).")
     parser.add_argument("--seed", type=int, default=8734942, help="Seed of the random generator used for reproducible trajectory generation (default: 8734942).")
