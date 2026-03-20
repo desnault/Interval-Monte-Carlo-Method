@@ -183,12 +183,12 @@ if __name__ == "__main__":
     # Display all noisy trajectories
     for trajectory in noisy_trajectories:
         trajectory = np.array(trajectory)
-        plt.plot(trajectory[:, 4], trajectory[:, 5], alpha=0.7, zorder=0)
+        plt.plot(trajectory[:, 1], trajectory[:, 2], alpha=0.7, zorder=0)
 
     # Display the perfect trajectory on top
     plt.plot(
-        perfect_trajectory[:, 4],
-        perfect_trajectory[:, 5],
+        perfect_trajectory[:, 1],
+        perfect_trajectory[:, 2],
         color="black",
         linewidth=2,
         zorder=10,
