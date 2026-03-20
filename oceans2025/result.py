@@ -404,7 +404,6 @@ for ax, n_values, lower_bounds, upper_bounds, title in plot_definitions:
     ax.set_title(title)
     ax.set_xlabel("Number of trajectories")
     ax.set_ylabel("Probability bound")
-    ax.set_ylim(0.0, 1.0)
     ax.grid(True)
 
 # Global figure title and legend
