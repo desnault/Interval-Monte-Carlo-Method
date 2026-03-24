@@ -453,24 +453,23 @@ The state of the AUV is described by its planar position and heading, and its mo
 #### Object representation
 
 The three target objects are modeled as **uncertain regions** using interval boxes:
-
-\[
+```math
 \mathcal{B}_i \subset \mathbb{R}^2, \quad i = 1,2,3
-\]
+```
 
 Each box represents a set of possible positions where the object may lie.  
 No probability distribution is assumed inside the box: the only available information is that the object is **guaranteed to be somewhere within this region**.
 
 #### Sensor model
 
-The AUV is equipped with a **range-based sensor** of fixed radius \( R \).  
-At any time \( t \), the sensor footprint is modeled as a disk:
+The AUV is equipped with a **range-based sensor** of fixed radius $R$.  
+At any time $t$, the sensor footprint is modeled as a disk:
 
-\[
+```math
 \mathcal{D}(t) = \{ x \in \mathbb{R}^2 \mid \|x - p(t)\| \leq R \}
-\]
+```
 
-where \( p(t) \) is the position of the AUV at time \( t \).
+where $p(t)$ is the position of the AUV at time $t$.
 
 An object is considered detected if its entire uncertainty box intersects the sensor footprint at least once along the trajectory.
 
