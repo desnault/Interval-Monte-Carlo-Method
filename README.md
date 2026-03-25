@@ -17,7 +17,7 @@ This repository provides:
 - utilities for **set-based classification using interval analysis**,
 - and a complete **illustrative example** applied to an **autonomous underwater vehicle (AUV)** mission.
 
-In this example, the method is used to **bound the probability that an AUV successfully observes multiple uncertain objects** during a mission, highlighting the impact of navigation drift and uncertainty accumulation over time.
+In this example, the method is used to **bound the probability that an AUV successfully observes multiple objects with uncertain positions** during a mission, highlighting the impact of navigation drift and uncertainty accumulation over time.
 
 > ⚠️ **Recommended reading**
 >  
