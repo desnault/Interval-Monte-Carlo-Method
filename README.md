@@ -449,7 +449,9 @@ The state of the AUV is described by its planar position and heading, and its mo
 
 ```math
 \mathbf{x}(t) = (p_{x}(t), p_{y}(t), \theta(t), v(t)), \\ 
+
 \mathbf{u}(t) = (u_{\theta}(t), u_{v}(t)), \\ 
+
 \quad\text{and}\quad \mathbf{\dot{x}}(t) = (v(t) \cdot cos(\theta(t)), v(t) \cdot sin(\theta(t)), u_{\theta}(t), u_{v}(t)).
 ```
 
