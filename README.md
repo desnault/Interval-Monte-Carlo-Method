@@ -79,8 +79,6 @@ In this example, the method is used to **bound the probability that an AUV succe
 
 - [🔮 Future Work](#-future-work)
 
-- [📚 References](#-references)
-
 ## ⚠️ Project Status
 
 This repository provides a **research-oriented implementation** of the Interval Monte-Carlo Method.
@@ -419,16 +417,14 @@ The complete workflow associated with this example (trajectory generation, proce
 
 ### Overview of the Scenario
 
-We consider an **inspection mission conducted by an autonomous underwater vehicle (AUV)** operating at constant depth over a flat seabed.  
-The mission objective is to **observe three objects** previously detected during an earlier survey.
+We consider an **inspection mission conducted by an autonomous underwater vehicle (AUV)** operating at constant depth over a flat seabed. The mission objective is to **observe three objects** previously detected during an earlier survey.
 
-The AUV follows a predefined trajectory designed to pass near each object.  
-However, due to navigation uncertainty (e.g., dead-reckoning drift), the **actual trajectory deviates from the nominal one**, making mission success uncertain.
+The AUV follows a predefined trajectory designed to pass near each object. However, due to navigation uncertainty (e.g., dead-reckoning drift), the **actual trajectory deviates from the nominal one**, making mission success uncertain.
 
 The figure below provides a global overview of the scenario:
 
 <p align="center">
-  <img src="oceans2025/mission_overlook.png" width="700">
+  <img src="oceans2025/mission_overlook.png" width="900">
 </p>
 
 In this figure:
@@ -448,7 +444,13 @@ This scenario captures a common situation in marine robotics:
 ### Mission Geometry and Uncertainties
 
 The mission is defined in a **2D spatial framework**, assuming constant depth and a flat seabed.  
-The state of the AUV is described by its planar position and heading, and its motion is modeled using a **Dubins-like kinematic model**.
+The state of the AUV is described by its planar position and heading, and its motion is modeled using a **Dubins-like kinematic model**:
+
+```math
+\mathbf{x}(t) = (p_{x}(t), p_{y}(t), \theta(t), v(t)), \quad \mathbf{u}(t) = (u_{\theta}(t), u_{v}(t)) \quad \quad\text{and}\quad \mathbf{\dot{x}}(t) = (v(t) \cdot cos(\theta(t)), v(t) \cdot sin(\theta(t)), u_{\theta}(t), u_{v}(t)).
+```
+
+where: $\mathbf{x}(t)$ is the state vector of the vehicle and $\mathbf{u}(t)$ is the input vector. The 2D coordinates of the vehicle are represented by $(p_{x}(t), p_{y}(t))$, the heading of the vehicle is represented by $\theta(t)$ and the linear speed of the vehicle is represented by $v(t)$.
 
 #### Object representation
 
@@ -495,3 +497,576 @@ As time progresses:
 The mission success is therefore not deterministic, but must be evaluated **statistically**, while accounting for:
 - spatial uncertainty (object boxes),
 - and trajectory variability (Monte Carlo samples).
+
+### Three-Valued Logic Interpretation
+
+In this framework, the outcome of a mission cannot always be classified using a classical binary logic (success/failure).  
+Due to uncertainty on object positions and trajectory variability, the result of a simulation may be **ambiguous**.
+
+To address this, IMCM relies on a **three-valued logic**:
+
+- **TRUE**  
+  The object is **guaranteed to be observed**, regardless of its exact position within its uncertainty box.
+
+- **FALSE**  
+  The object is **guaranteed not to be observed**, for any possible position inside the box.
+
+- **UNKNOWN**  
+  The result is **uncertain**: depending on the true position of the object within the box, it may or may not be observed.
+
+---
+
+#### Interpretation in the mission context
+
+For a given trajectory:
+- the AUV sensor footprint evolves over time,
+- and interacts with each object box.
+
+The classification is performed using **interval-based inclusion tests**:
+- if the box is entirely covered by the sensor footprint at some time → **TRUE**
+- if it is entirely outside for all times → **FALSE**
+- otherwise → **UNKNOWN**
+
+---
+
+#### Multiple-object mission
+
+The mission objective is to observe **all three objects** during a single trajectory.
+
+The global result is obtained by combining individual results using a **three-valued logical AND**:
+
+- If **at least one object is FALSE** → mission is **FALSE**
+- Else if **at least one object is UNKNOWN** → mission is **UNKNOWN**
+- Else → mission is **TRUE**
+
+This logic reflects the fact that:
+- missing a single object leads to mission failure,
+- uncertainty on any object propagates to the global result.
+
+---
+
+#### Why three-valued logic?
+
+This approach allows IMCM to:
+- **explicitly represent uncertainty** in classification,
+- avoid overly optimistic or pessimistic assumptions,
+- and produce **robust probability bounds** instead of single estimates.
+
+It is a key difference with classical Monte Carlo methods, where each simulation is forced into a binary outcome.
+
+### Results: Probability Bounds Evolution
+
+Using the simulated trajectories and the three-valued classification, IMCM computes **interval-valued probability bounds** for:
+
+- the detection of each individual object,
+- and the detection of all objects during a single mission.
+
+The evolution of these bounds as the number of Monte Carlo samples increases is shown below:
+
+<p align="center">
+  <img src="oceans2025/probability_bounds_evolution.png" width="1200">
+</p>
+
+---
+
+#### Interpretation of the curves
+
+Each subplot represents the evolution of an **interval probability estimate**:
+
+- the **blue curve** is the lower bound,
+- the **orange curve** is the upper bound,
+- the **shaded area** represents the uncertainty interval.
+
+At any number of samples $N$, the true probability $p$ is estimated to lie within the interval $[p_{N}]$.
+
+---
+
+#### Convergence behavior
+
+As the number of samples increases:
+
+- the bounds tend to stabilize,
+- and the width of the interval generally decreases.
+
+This reflects the empirical nature of the method:
+
+- each new trajectory refines the estimation,
+- reducing uncertainty on the probability.
+
+> ⚠️ **Important**
+> 
+> The convergence is not guaranteed in a deterministic sense.
+>
+> According to the law of large numbers, the estimator converges almost surely, meaning that convergence is expected with high probability, but not strictly guaranteed.
+
+
+## ▶️ Reproducing the OCEANS 2025 Results
+
+This section describes how to **reproduce the full OCEANS 2025 scenario**, including:
+- trajectory generation,
+- Monte Carlo processing,
+- and result visualization.
+
+The workflow relies on both **Python** and **C++** components.
+
+---
+
+### Step 1 — Generate trajectories
+
+Generate stochastic trajectories using the Python script:
+
+```bash
+python data/main.py
+```
+
+This script:
+
+- simulates multiple AUV trajectories using a stochastic Dubins model,
+- introduces noise in the heading command (dead-reckoning behavior),
+- exports:
+    - `.tubevector` files (used by C++),
+    - `.txt` files (used for visualization).
+
+The generated data is stored in:
+```
+data/oceans2025/
+├── Perfect/
+└── Noisy/
+```
+
+---
+
+### Step 2 — (Optional) Visualize trajectories
+
+You can visualize the generated trajectories before processing:
+```bash
+python data/display_trajectories.py
+```
+
+This allows you to:
+
+- inspect the reference trajectory,
+- observe trajectory dispersion,
+- verify that the simulation behaves as expected.
+
+---
+
+### Step 3 — Process trajectories (C++)
+
+Run the C++ script to:
+
+- classify each trajectory using three-valued logic,
+- compute interval probability bounds,
+- export results for post-processing.
+
+```bash
+./build/oceans2025/main
+```
+
+This step:
+
+- loads all `.tubevector` files from `data/oceans2025/Noisy`,
+- evaluates detection for each object and for the global mission,
+- computes the evolution of probability bounds.
+
+The results are exported to:
+```
+data/oceans2025/
+├── prob_box1.txt
+├── prob_box2.txt
+├── prob_box3.txt
+├── prob_all.txt
+└── trajectory_results.txt
+```
+
+---
+
+### Step 4 — Display results (Python)
+
+Finally, visualize the results:
+```bash
+python oceans2025/result.py
+```
+
+This script produces two figures:
+
+1) Probability bounds evolution
+    - interval estimates as a function of the number of samples
+2) Trajectory classification
+    - trajectories colored according to:
+        - TRUE (green),
+        - UNKNOWN (yellow),
+        - FALSE (red)
+
+It also displays:
+
+- the object boxes,
+- the reference trajectory,
+- and the final probability bounds.
+
+> **Notes**
+>
+> ⏳ The full workflow typically takes a few minutes (~3 minutes).
+>
+> Execution time depends mainly on:
+> - the number of simulated trajectories,
+> - and the resolution of interval computations.
+>
+> ⚠️ If files are missing:
+> - ensure that Step 1 and Step 3 have been executed successfully,
+> - and that the data/oceans2025/ directory is correctly populated.
+
+## 🗂️ Repository Structure
+
+The repository is organized into four main parts:
+
+```text
+Interval-Monte-Carlo-Method/
+├── data/
+├── examples/
+├── oceans2025/
+├── src/
+├── README.md
+└── ...
+```
+
+---
+
+### `src/` — Core C++ implementation
+
+This folder contains the main C++ components of the project.
+
+#### `src/BoxInclusionClassifier/`
+Implements a classifier used to determine whether a 2D box is:
+- fully covered,
+- not covered,
+- or uncertainly covered
+
+with respect to a separator-defined region.
+
+Main files:
+- `BoxInclusionClassifier.h`
+- `BoxInclusionClassifier.cpp`
+
+Purpose:
+- evaluate geometric detection events under interval uncertainty,
+- provide the three-valued logic classification used by IMCM.
+
+#### `src/IntervalMonteCarlo/`
+Implements the generic Interval Monte-Carlo framework.
+
+Main files:
+- `IntervalMonteCarlo.h`
+
+Purpose:
+- process samples sequentially,
+- evaluate them with three-valued logic,
+- compute an interval-valued empirical probability bound,
+- export the evolution of the bound over the number of processed samples.
+
+#### `src/Codac-Coverage-Toolbox/`
+This folder contains the **Codac Coverage Toolbox** as a submodule.
+
+Purpose:
+- provide set-based tools used in this project,
+- especially separators and coverage-related geometric operators.
+
+This submodule is external to the IMCM implementation itself, but is required for several examples and scenario scripts.
+
+---
+
+### `examples/` — Minimal usage examples
+
+This folder contains lightweight C++ examples illustrating how to use the core classes.
+
+#### `examples/BoxInclusionClassifier/`
+Examples showing how to classify a box with respect to a geometric set.
+
+Purpose:
+- illustrate the difference between full inclusion, exclusion, and uncertainty,
+- provide a minimal entry point to understand the `BoxInclusionClassifier` class.
+
+#### `examples/IntervalMonteCarlo/`
+Examples showing how to derive and use the `IntervalMonteCarlo` class.
+
+Purpose:
+- demonstrate use with simple scalar samples,
+- demonstrate use with structured/custom samples,
+- show how to process samples one by one or in batches.
+
+These examples are intended as the easiest way to understand the basic usage of the framework before running the full OCEANS 2025 scenario.
+
+---
+
+### `data/` — Python utilities and generated datasets
+
+This folder contains:
+- Python scripts used to generate or inspect data,
+- example datasets,
+- and the trajectory files used by the OCEANS 2025 scenario.
+
+#### `data/dubins_car.py`
+A reusable Python class implementing a simple 2D Dubins-car simulator.
+
+Purpose:
+- generate deterministic or stochastic trajectories,
+- serve as a base model for simulation scripts.
+
+#### `data/main.py`
+Python script used to generate the OCEANS 2025 trajectory dataset.
+
+Purpose:
+- simulate the reference trajectory,
+- generate multiple noisy trajectories,
+- export trajectories as:
+  - `.txt` files for visualization,
+  - `.tubevector` files for C++ processing.
+
+#### `data/display_trajectories.py`
+Python script used to visualize the generated trajectories.
+
+Purpose:
+- quickly inspect the dispersion of noisy trajectories,
+- compare them with the reference trajectory.
+
+#### `data/examples/`
+Contains example trajectories and associated images used by the `IntervalMonteCarlo` examples.
+
+Purpose:
+- provide ready-to-use sample data,
+- allow users to verify example outputs visually.
+
+#### `data/oceans2025/`
+Contains the generated dataset and exported results associated with the OCEANS 2025 scenario.
+
+Typical content:
+- `Perfect/` — reference trajectory
+- `Noisy/` — stochastic trajectories
+- exported probability files
+- exported trajectory classification file
+
+---
+
+### `oceans2025/` — Complete scenario example
+
+This folder contains the end-to-end mission feasibility example used throughout the README.
+
+#### `oceans2025/main.cpp`
+C++ processing script for the OCEANS 2025 scenario.
+
+Purpose:
+- load the generated `.tubevector` trajectories,
+- evaluate detection of the three uncertain objects,
+- compute interval probability bounds,
+- export convergence and classification results.
+
+#### `oceans2025/result.py`
+Python visualization script for the OCEANS 2025 scenario.
+
+Purpose:
+- display the evolution of the four probability bounds,
+- display the trajectories colored by mission outcome,
+- summarize the final detection probabilities.
+
+#### `oceans2025/mission_overlook.png`
+Illustration of the mission scenario.
+
+Purpose:
+- show the reference trajectory, noisy trajectories, sensor footprints, and object boxes.
+
+#### `oceans2025/probability_bounds_evolution.png`
+Illustration of the probability-bound evolution.
+
+Purpose:
+- show how interval estimates evolve as the number of processed trajectories increases.
+
+---
+
+### Root files
+
+#### `README.md`
+Main documentation of the repository.
+
+Purpose:
+- explain the method,
+- describe the repository structure,
+- guide installation and usage,
+- summarize the theory and the OCEANS 2025 example.
+
+#### `CMakeLists.txt`
+Recommended build configuration file.
+
+Purpose:
+- compile the library and the examples,
+- expose the `data/` directory to the C++ code,
+- organize the generated executables.
+
+## 🧠 Theory and Concepts
+
+This section presents the main concepts behind the **Interval Monte-Carlo Method (IMCM)**.
+
+The goal is to provide both:
+- an intuitive understanding of the method,
+- and a concise mathematical formulation.
+
+---
+
+### Motivation
+
+In many applications, the probability of success of a system must be evaluated under:
+- **uncertain environments** (e.g., unknown object positions),
+- and **stochastic system behavior** (e.g., noisy control inputs).
+
+Classical Monte Carlo methods estimate probabilities by:
+- simulating many realizations,
+- and computing the ratio of successful outcomes.
+
+However, these approaches:
+- assume a precise definition of success/failure,
+- and rely on known probability distributions.
+
+In contrast, IMCM addresses situations where:
+- uncertainty is represented by **sets (intervals)**,
+- and the outcome of a simulation may be **ambiguous**.
+
+---
+
+### Three-Valued Monte Carlo Principle
+
+Instead of assigning a binary outcome to each simulation, IMCM uses a **three-valued logic**:
+
+- TRUE: the success condition is guaranteed,
+- FALSE: the success condition is impossible,
+- UNKNOWN: the outcome depends on unresolved uncertainty.
+
+Each simulation produces a value in:
+```math
+\{ \text{TRUE}, \text{FALSE}, \text{UNKNOWN} \}
+```
+
+This allows the method to:
+- preserve uncertainty,
+- and avoid forced decisions.
+
+---
+
+### Interval-Based Classification
+
+Given a sample (e.g., a trajectory), the success condition is evaluated using **set-based methods**.
+
+Let:
+- $X$ be the uncertain state (e.g., object position),
+- $S$ the success region (e.g., sensor coverage over time).
+
+The classification is defined as:
+
+```math
+\text{TRUE} \quad \text{if} \quad X \subset S
+```
+
+```math
+\text{FALSE} \quad \text{if} \quad X \cap S = \emptyset
+```
+
+```math
+\text{UNKNOWN} \quad \text{otherwise}
+```
+
+This classification is implemented using tools such as:
+- separators,
+- interval contractors,
+- and inclusion tests.
+
+---
+
+### Empirical Probability Bounds
+
+Let $N$ be the number of samples.
+
+Define:
+- $N_T$: number of TRUE outcomes,
+- $N_F$: number of FALSE outcomes,
+- $N_U$: number of UNKNOWN outcomes.
+
+The probability of success $p$ is bounded by:
+
+```math
+\frac{N_T}{N} \leq p \leq \frac{N_T + N_U}{N}
+```
+
+This defines an **interval-valued estimator**:
+
+```math
+p \in [\underline{p}_N, \overline{p}_N]
+```
+
+where:
+- lower bound: assumes all UNKNOWN are failures,
+- upper bound: assumes all UNKNOWN are successes.
+
+---
+
+### Convergence and Interpretation
+
+As the number of samples increases:
+- the estimator tends to stabilize,
+- and the interval width typically decreases.
+
+According to the **law of large numbers**:
+- the estimator converges **almost surely**,
+- but not with strict certainty.
+
+> ⚠️ This is not a guaranteed enclosure in the classical set-membership sense.
+
+Instead, IMCM provides:
+- **probabilistic bounds** informed by uncertainty,
+- and a controlled trade-off between conservatism and information.
+
+---
+
+### Key Insight
+
+IMCM bridges:
+- **set-based uncertainty representation**,
+- and **Monte Carlo simulation**.
+
+It enables:
+- robust evaluation of uncertain systems,
+- without requiring full probabilistic models,
+- while preserving ambiguity when necessary.
+
+## 🔮 Future Work
+
+This repository provides a first implementation of the **Interval Monte-Carlo Method (IMCM)** and demonstrates its application on a realistic robotics scenario.
+
+Several extensions and improvements are possible:
+
+- **Compatibility with CODAC v2**  
+  A future update will aim at adapting the implementation to the next generation of CODAC tools.
+
+- **Performance improvements**  
+  Optimizing:
+  - trajectory processing,
+  - classification routines,
+  - and interval computations  
+  could significantly reduce execution time for large-scale simulations.
+
+- **Parallelization**  
+  Since Monte Carlo simulations are naturally parallel, future work may include:
+  - multi-threaded implementations,
+  - or GPU-based approaches.
+
+- **More advanced scenarios**  
+  Extending the framework to:
+  - higher-dimensional problems,
+  - multi-agent systems,
+  - or more complex sensor models.
+
+- **Theoretical developments**  
+  Further work may explore:
+  - tighter bounds,
+  - convergence analysis,
+  - and links with imprecise probability theory.
+
+This repository is intended as a **research and experimentation platform**, and users are encouraged to extend and adapt it to their own applications.
+
