@@ -342,7 +342,7 @@ cd ..
 
 A good first test is the second `IntervalMonteCarlo` example:
 ```bash
-.build/examples/IntervalMonteCarlo/example2_custom_struct_IntervalMonteCarlo
+./build/examples/IntervalMonteCarlo/example2_custom_struct_IntervalMonteCarlo
 ```
 
 Expected terminal output:
