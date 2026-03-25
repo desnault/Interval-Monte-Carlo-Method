@@ -547,6 +547,8 @@ The global result is obtained by combining individual results using a **three-va
 - Else if **at least one object is UNKNOWN** → mission is **UNKNOWN**
 - Else → mission is **TRUE**
 
+![Three-valued logic AND table](https://i.sstatic.net/h0Wvg.png)
+
 This logic reflects the fact that:
 - missing a single object leads to mission failure,
 - uncertainty on any object propagates to the global result.
