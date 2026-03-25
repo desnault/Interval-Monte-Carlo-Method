@@ -444,7 +444,8 @@ This scenario captures a common situation in marine robotics:
 
 ### Mission Geometry and Uncertainties
 
-The mission is defined in a **2D spatial framework**, assuming constant depth and a flat seabed.  
+The mission is defined in a **2D spatial framework**, assuming constant depth and a flat seabed. 
+
 The state of the AUV is described by its planar position and heading, and its motion is modeled using a **Dubins-like kinematic model**:
 
 ```math
@@ -464,12 +465,14 @@ The three target objects are modeled as **uncertain regions** using interval box
 \mathcal{B}_i \subset \mathbb{R}^2, \quad i = 1,2,3
 ```
 
-Each box represents a set of possible positions where the object may lie.  
+Each box represents a set of possible positions where the object may lie.
+
 No probability distribution is assumed inside the box: the only available information is that the object is **guaranteed to be somewhere within this region**.
 
 #### Sensor model
 
 The AUV is equipped with a **range-based sensor** of fixed radius $R$.  
+
 At any time $t$, the sensor footprint is modeled as a disk:
 
 ```math
@@ -478,7 +481,7 @@ At any time $t$, the sensor footprint is modeled as a disk:
 
 where $p(t)$ is the position of the AUV at time $t$.
 
-An object is considered detected if its entire uncertainty box intersects the sensor footprint at least once along the trajectory.
+An object is considered detected if its entire uncertainty box is included in the covered area (i.e. the union of the sensor footprints along the trajectory).
 
 #### Stochastic trajectory model
 
