@@ -1,6 +1,6 @@
 # Interval Monte-Carlo Method (IMCM)
 
-The **Interval Monte-Carlo Method (IMCM)** is a framework designed to **bound the probability of success of a system under uncertainty** by combining **Monte Carlo simulation** with **interval analysis** and **three-valued logic**.
+The **Interval Monte-Carlo Method (IMCM)** is a framework designed to **bound the probability of success of a system under uncertainty** by combining **Monte Carlo simulation** (i.e. random sampling) with **interval analysis** and **three-valued logic**.
 
 Unlike classical Monte Carlo approaches that provide pointwise probability estimates, IMCM produces **interval-valued probability bounds** that explicitly account for:
 - uncertainties on system states and environment,
