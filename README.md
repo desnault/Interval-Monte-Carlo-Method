@@ -637,7 +637,7 @@ python data/main.py
 
 This script:
 
-- simulates multiple AUV trajectories using a stochastic Dubins model,
+- simulates multiple AUV trajectories (i.e., set to 1000 by default) using a stochastic Dubins car model,
 - introduces noise in the heading command (dead-reckoning behavior),
 - exports:
     - `.tubevector` files (used by C++),
