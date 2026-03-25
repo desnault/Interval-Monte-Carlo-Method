@@ -22,32 +22,32 @@ In this example, the method is used to **bound the probability that an AUV succe
 > ⚠️ **Recommended reading**
 >  
 > This README contains both practical examples and theoretical explanations.  
-> For a deeper understanding of the method, it is recommended to first read the **"Theory and Concepts"** section before exploring the example scenarios.
+>
+> For a deeper understanding of the method, it is recommended to first read the **"Theory and Concepts"** section before exploring the example scenarios (see Table of contents to locate the section).
 
-> 📖 **Citation**
->
-> This work has been presented at **OCEANS 2025 Brest** and published in IEEE Xplore.  
-> If you use this repository in your research, please consider citing:
->
-> **IEEE format**
-> ```
-> D. Esnault, S. Rohou, F. Le Bars and L. Jaulin, "Bounding the Success Probability of Naval Mine-Clearance Missions Conducted by AUVs," OCEANS 2025 Brest, BREST, France, 2025, pp. 1-8, doi: 10.1109/OCEANS58557.2025.11104600.
-> ```
->
-> **BibTeX**
-> ```bibtex
-> @inproceedings{esnault2025,
->   author    = {Esnault, Damien and Rohou, Simon and Le Bars, Fabrice and Jaulin, Luc},
->   title     = {Bounding the Success Probability of Naval Mine-Clearance Missions Conducted by AUVs},
->   booktitle = {OCEANS 2025 Brest},
->   year      = {2025},
->   pages     = {1--8},
->   doi       = {10.1109/OCEANS58557.2025.11104600}
-> }
-> ```
->
-> 🔗 IEEE Xplore: https://ieeexplore.ieee.org/abstract/document/11104600 <br>
-> 🔗 HAL (open access): https://hal.science/hal-05240578
+📖 **Citation**
+
+This work has been presented at **OCEANS 2025 Brest** and published in IEEE Xplore.  
+If you use this repository in your research, please consider citing:
+
+```
+D. Esnault, S. Rohou, F. Le Bars and L. Jaulin, "Bounding the Success Probability of Naval Mine-Clearance Missions Conducted by AUVs," OCEANS 2025 Brest, BREST, France, 2025, pp. 1-8, doi: 10.1109/OCEANS58557.2025.11104600.
+```
+
+**BibTeX**
+```bibtex
+@inproceedings{esnault2025,
+author    = {Esnault, Damien and Rohou, Simon and Le Bars, Fabrice and Jaulin, Luc},
+title     = {Bounding the Success Probability of Naval Mine-Clearance Missions Conducted by AUVs},
+booktitle = {OCEANS 2025 Brest},
+year      = {2025},
+pages     = {1--8},
+doi       = {10.1109/OCEANS58557.2025.11104600}
+}
+```
+
+🔗 IEEE Xplore: https://ieeexplore.ieee.org/abstract/document/11104600 <br>
+🔗 HAL (open access): https://hal.science/hal-05240578
 
 ## 📚 Table of Contents
 
