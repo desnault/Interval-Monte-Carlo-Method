@@ -918,85 +918,84 @@ Purpose:
 
 ## 🧠 Theory and Concepts
 
-This section presents the main concepts behind the **Interval Monte-Carlo Method (IMCM)**.
-
-The goal is to provide both:
-- an intuitive understanding of the method,
-- and a concise mathematical formulation.
+This section provides a **conceptual and mathematical overview** of the Interval Monte-Carlo Method (IMCM).  
+The objective is to formalize how **uncertainty, classification, and probability estimation** are handled within a unified framework.
 
 ---
 
-### Motivation
+### Problem Setting
 
-In many applications, the probability of success of a system must be evaluated under:
-- **uncertain environments** (e.g., unknown object positions),
-- and **stochastic system behavior** (e.g., noisy control inputs).
-
-Classical Monte Carlo methods estimate probabilities by:
-- simulating many realizations,
-- and computing the ratio of successful outcomes.
-
-However, these approaches:
-- assume a precise definition of success/failure,
-- and rely on known probability distributions.
-
-In contrast, IMCM addresses situations where:
-- uncertainty is represented by **sets (intervals)**,
-- and the outcome of a simulation may be **ambiguous**.
-
----
-
-### Three-Valued Monte Carlo Principle
-
-Instead of assigning a binary outcome to each simulation, IMCM uses a **three-valued logic**:
-
-- TRUE: the success condition is guaranteed,
-- FALSE: the success condition is impossible,
-- UNKNOWN: the outcome depends on unresolved uncertainty.
-
-Each simulation produces a value in:
-```math
-\{ \text{TRUE}, \text{FALSE}, \text{UNKNOWN} \}
-```
-
-This allows the method to:
-- preserve uncertainty,
-- and avoid forced decisions.
-
----
-
-### Interval-Based Classification
-
-Given a sample (e.g., a trajectory), the success condition is evaluated using **set-based methods**.
+We consider a system whose behavior depends on:
+- a **stochastic process**,
+- and **uncertain parameters** represented by sets (e.g., interval boxes).
 
 Let:
-- $X$ be the uncertain state (e.g., object position),
-- $S$ the success region (e.g., sensor coverage over time).
+- $\omega$ denote a realization of the stochastic process,
+- $x \in \mathcal{X} \subset \mathbb{R}^n$ denote uncertain parameters,
+- and $E(\omega, x)$ be a binary event of interest (e.g., detection of an object).
+
+The goal is to estimate the **probability of success**:
+
+```math
+p = \mathbb{P}\big( E(\omega, x) = 1 \big)
+```
+
+However, in the presence of epistemic uncertainty on $x$, the event $E$ may not be fully determined.
+
+---
+
+### From Binary to Three-Valued Logic
+
+In classical Monte Carlo methods, each realization $\omega$ produces a **binary outcome**:
+- success (1),
+- or failure (0).
+
+In IMCM, due to uncertainty on $x$, the outcome is evaluated over a set $\mathcal{X}$, leading to a **set-valued event**:
+
+```math
+E(\omega, \mathcal{X}) = \{ E(\omega, x) \mid x \in \mathcal{X} \}
+```
+
+This induces a **three-valued logic**:
+
+- **TRUE** if $E(\omega, x) = 1$ for all $x \in \mathcal{X}$,
+- **FALSE** if $E(\omega, x) = 0$ for all $x \in \mathcal{X}$,
+- **UNKNOWN** otherwise.
+
+This classification preserves ambiguity and avoids arbitrary assumptions on the unknown parameters.
+
+---
+
+### Set-Based Classification
+
+The evaluation of $E(\omega, \mathcal{X})$ relies on **set-membership methods**.
+
+Let:
+- $\mathcal{S}(\omega)$ denote the success region induced by a realization $\omega$,
+- $\mathcal{X}$ the uncertainty set.
 
 The classification is defined as:
 
 ```math
-\text{TRUE} \quad \text{if} \quad X \subset S
+\begin{aligned}
+\text{TRUE}   &\quad \text{if} \quad \mathcal{X} \subset \mathcal{S}(\omega) \\
+\text{FALSE}  &\quad \text{if} \quad \mathcal{X} \cap \mathcal{S}(\omega) = \emptyset \\
+\text{UNKNOWN}&\quad \text{otherwise}
+\end{aligned}
 ```
 
-```math
-\text{FALSE} \quad \text{if} \quad X \cap S = \emptyset
-```
-
-```math
-\text{UNKNOWN} \quad \text{otherwise}
-```
-
-This classification is implemented using tools such as:
+In practice, this is implemented using:
+- interval analysis,
 - separators,
-- interval contractors,
 - and inclusion tests.
 
 ---
 
-### Empirical Probability Bounds
+### Interval Monte Carlo Estimator
 
-Let $N$ be the number of samples.
+Let $N$ be the number of Monte Carlo samples.  
+
+Each sample produces a value in $\{ \text{TRUE}, \text{FALSE}, \text{UNKNOWN} \}$.
 
 Define:
 - $N_T$: number of TRUE outcomes,
@@ -1009,46 +1008,55 @@ The probability of success $p$ is bounded by:
 \frac{N_T}{N} \leq p \leq \frac{N_T + N_U}{N}
 ```
 
-This defines an **interval-valued estimator**:
+This defines an **interval estimator**:
 
 ```math
 p \in [\underline{p}_N, \overline{p}_N]
 ```
 
-where:
-- lower bound: assumes all UNKNOWN are failures,
-- upper bound: assumes all UNKNOWN are successes.
+with:
+- $\underline{p}_N = \frac{N_T}{N}$,
+- $\overline{p}_N = \frac{N_T + N_U}{N}$.
 
 ---
 
-### Convergence and Interpretation
+### Interpretation
 
-As the number of samples increases:
-- the estimator tends to stabilize,
-- and the interval width typically decreases.
+- The **lower bound** assumes that all UNKNOWN cases correspond to failures.
+- The **upper bound** assumes that all UNKNOWN cases correspond to successes.
 
-According to the **law of large numbers**:
+Thus, the interval reflects the **degree of ambiguity** induced by epistemic uncertainty.
+
+---
+
+### Convergence Properties
+
+As $N \to \infty$:
 - the estimator converges **almost surely**,
-- but not with strict certainty.
+- and the interval typically narrows.
 
-> ⚠️ This is not a guaranteed enclosure in the classical set-membership sense.
+However:
+- convergence is not guaranteed in a deterministic sense,
+- and the interval width depends on the proportion of UNKNOWN outcomes.
 
-Instead, IMCM provides:
-- **probabilistic bounds** informed by uncertainty,
-- and a controlled trade-off between conservatism and information.
+This highlights a key feature of IMCM:
+- the method does not artificially reduce uncertainty,
+- it explicitly quantifies the remaining ambiguity.
 
 ---
 
 ### Key Insight
 
-IMCM bridges:
-- **set-based uncertainty representation**,
-- and **Monte Carlo simulation**.
+IMCM combines:
+- **Monte Carlo simulation** (to handle stochasticity),
+- and **interval analysis** (to handle epistemic uncertainty),
 
-It enables:
-- robust evaluation of uncertain systems,
-- without requiring full probabilistic models,
-- while preserving ambiguity when necessary.
+within a single framework.
+
+It provides:
+- **probability bounds** instead of point estimates,
+- a natural handling of incomplete information,
+- and a principled alternative to classical probabilistic approaches.
 
 ## 🔮 Future Work
 
