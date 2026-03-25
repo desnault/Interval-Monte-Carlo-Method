@@ -587,7 +587,13 @@ Each subplot represents the evolution of an **interval probability estimate**:
 - the **orange curve** is the upper bound,
 - the **shaded area** represents the uncertainty interval.
 
-At any number of samples $N$, the true probability $p$ is estimated to lie within the interval $[p_{N}]$.
+At any number of samples $N$, the true probability $p$ is estimated to lie within an interval.
+
+> ⚠️ **Important**
+> 
+> The inclusion of $p$ in the interval is not guaranteed in a deterministic sense.
+>
+> According to the law of large numbers, the interval contains $p$ almost surely, meaning that the inclusion is expected with high probability, but not strictly guaranteed.
 
 ---
 
@@ -596,7 +602,7 @@ At any number of samples $N$, the true probability $p$ is estimated to lie withi
 As the number of samples increases:
 
 - the bounds tend to stabilize,
-- and the width of the interval generally decreases.
+- and the width of the interval generally decreases and stabilizes.
 
 This reflects the empirical nature of the method:
 
