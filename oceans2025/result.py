@@ -526,5 +526,81 @@ ax_traj.legend(loc="upper right", prop={"weight": "bold"})
 
 fig_traj.tight_layout()
 
+# =============================================================================
+# DRAW AUV + PERCEPTION DISK ALONG REFERENCE TRAJECTORY
+# =============================================================================
+
+def draw_auv(ax, x, y, theta, size=0.8):
+    """
+    Draw a simple triangular AUV oriented with heading theta.
+    """
+    # Triangle in local frame
+    triangle = np.array([
+        [ size,  0.0],
+        [-size/2,  size/2],
+        [-size/2, -size/2]
+    ])
+
+    # Rotation matrix
+    R = np.array([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta),  np.cos(theta)]
+    ])
+
+    # Rotate and translate
+    triangle_world = (R @ triangle.T).T + np.array([x, y])
+
+    polygon = plt.Polygon(triangle_world, color="blue", zorder=50)
+    ax.add_patch(polygon)
+
+
+def get_state_at_time(time_array, state_array, target_time):
+    """
+    Get closest state in trajectory to a given time.
+    """
+    idx = np.argmin(np.abs(time_array - target_time))
+    return state_array[idx]
+
+
+# Times where we draw the AUV
+auv_times = [10.0, 20.0]
+
+# Extract reference trajectory arrays
+ref_time = perfect_trajectory[:, 0]
+ref_states = perfect_trajectory[:, 1:]  # x, y, theta, v
+
+for t in auv_times:
+    state = get_state_at_time(ref_time, ref_states, t)
+
+    x, y, theta, _ = state
+
+    # Draw AUV
+    draw_auv(ax_traj, x, y, theta)
+
+    # Draw perception disk (radius = 2)
+    perception_circle = plt.Circle(
+        (x, y),
+        radius=2.0,
+        edgecolor="blue",
+        facecolor="none",
+        alpha=1.,
+        linewidth=2,
+        zorder=40
+    )
+    ax_traj.add_patch(perception_circle)
+
+    # Optional: annotate time
+    ax_traj.text(
+        x,
+        y - 1.5,
+        f"Vehicle\n t = {t:.0f}s",
+        fontsize=10,
+        fontweight="bold",
+        ha="center",
+        va="top",
+        zorder=60,
+        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none")
+    )
+
 # Display figures
 plt.show()

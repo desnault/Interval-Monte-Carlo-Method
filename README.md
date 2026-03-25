@@ -431,7 +431,7 @@ In this figure:
 - The **black curve** represents the nominal (reference) trajectory.
 - The **colored curves** represent simulated trajectories affected by stochastic perturbations.
 - The **three brown boxes** represent uncertain object locations on the seabed.
-- The **circular footprints** correspond to the sensing range of the AUV.
+- The **blue circular footprints** correspond to the sensing range of the AUV.
 
 Each object is not represented by a single point but by a **2D bounding box**, reflecting uncertainty on its exact position.  
 
