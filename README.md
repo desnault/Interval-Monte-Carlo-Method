@@ -448,7 +448,9 @@ The mission is defined in a **2D spatial framework**, assuming constant depth an
 The state of the AUV is described by its planar position and heading, and its motion is modeled using a **Dubins-like kinematic model**:
 
 ```math
-\mathbf{x}(t) = (p_{x}(t), p_{y}(t), \theta(t), v(t)), \\ \mathbf{u}(t) = (u_{\theta}(t), u_{v}(t)), \\ \quad\text{and}\quad \mathbf{\dot{x}}(t) = (v(t) \cdot cos(\theta(t)), v(t) \cdot sin(\theta(t)), u_{\theta}(t), u_{v}(t)).
+\mathbf{x}(t) = (p_{x}(t), p_{y}(t), \theta(t), v(t)), \\ 
+\mathbf{u}(t) = (u_{\theta}(t), u_{v}(t)), \\ 
+\quad\text{and}\quad \mathbf{\dot{x}}(t) = (v(t) \cdot cos(\theta(t)), v(t) \cdot sin(\theta(t)), u_{\theta}(t), u_{v}(t)).
 ```
 
 where: $\mathbf{x}(t)$ is the state vector of the vehicle and $\mathbf{u}(t)$ is the command vector. The 2D coordinates of the vehicle are represented by $(p_{x}(t), p_{y}(t))$, the heading of the vehicle is represented by $\theta(t)$ and the linear speed of the vehicle is represented by $v(t)$.
