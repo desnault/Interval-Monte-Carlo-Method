@@ -632,7 +632,7 @@ The workflow relies on both **Python** and **C++** components.
 Generate stochastic trajectories using the Python script:
 
 ```bash
-python data/main.py
+python3 data/main.py
 ```
 
 This script:
@@ -656,7 +656,7 @@ data/oceans2025/
 
 You can visualize the generated trajectories before processing:
 ```bash
-python data/display_trajectories.py
+python3 data/display_trajectories.py
 ```
 
 This allows you to:
@@ -701,7 +701,7 @@ data/oceans2025/
 
 Finally, visualize the results:
 ```bash
-python oceans2025/result.py
+python3 oceans2025/result.py
 ```
 
 This script produces two figures:
