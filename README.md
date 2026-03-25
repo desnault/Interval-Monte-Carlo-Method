@@ -722,7 +722,7 @@ It also displays:
 
 > **Notes**
 >
-> ⏳ The full workflow typically takes a few minutes (~3 minutes).
+> ⏳ The full workflow typically takes a few minutes (~5 minutes).
 >
 > Execution time depends mainly on:
 > - the number of simulated trajectories,
@@ -742,7 +742,6 @@ Interval-Monte-Carlo-Method/
 ├── examples/
 ├── oceans2025/
 ├── src/
-├── README.md
 └── ...
 ```
 
