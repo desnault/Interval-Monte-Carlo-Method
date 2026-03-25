@@ -25,7 +25,7 @@ In this example, the method is used to **bound the probability that an AUV succe
 >
 > For a deeper understanding of the method, it is recommended to first read the **"Theory and Concepts"** section before exploring the example scenarios (see Table of contents to locate the section).
 
-📖 **Citation**
+## 📖 Citation
 
 This work has been presented at **OCEANS 2025 Brest** and published in IEEE Xplore.  
 If you use this repository in your research, please consider citing:
