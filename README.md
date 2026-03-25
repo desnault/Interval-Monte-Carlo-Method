@@ -1064,7 +1064,8 @@ Several extensions and improvements are possible:
   - trajectory processing,
   - classification routines,
   - and interval computations  
-  could significantly reduce execution time for large-scale simulations.
+
+could significantly reduce execution time for large-scale simulations.
 
 - **Parallelization**  
   Since Monte Carlo simulations are naturally parallel, future work may include:
